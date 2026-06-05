@@ -1,0 +1,18 @@
+========================================================================
+  SCRIPT REPORT: enrich_match_metadata.py  v1.0.0
+========================================================================
+  Start Time  : 2026-04-19 20:42:59
+  End Time    : 2026-04-19 21:39:31
+  Duration    : 3392.2 seconds
+  Outcome     : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Matches processed : 3,561
+  Enriched          : 3,561
+  Errors            : 0
+  Confidence breakdown:
+    High   : 3,222
+    Medium : 171
+    Low    : 168
+────────────────────────────────────────────────────────────────────────
+  Log file : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\match_meta_20260419_204259.log
+========================================================================

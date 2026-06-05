@@ -1,0 +1,41 @@
+
+============================================================
+  SCRIPT REPORT: enrich_player_intl_status.py  v1.0.0
+============================================================
+  Start Time     : 2026-04-21 23:49:55
+  End Time       : 2026-04-22 00:20:29
+  Duration       : 0:30:34
+  Mode           : FULL
+  Outcome        : SUCCESS
+------------------------------------------------------------
+  Players processed : 1,200
+  Current year      : 2026  (Out 2Y+ cutoff ≤ 2024)
+------------------------------------------------------------
+  Status distribution (per-format counts):
+    Active        : 290
+    Retired       : 1,070
+    Out 2Y+       : 933
+    Never Played  : 1,306
+    Unknown       : 1
+------------------------------------------------------------
+  GPT errors       : 0
+  DB-only records  : 0
+------------------------------------------------------------
+  New columns added to player_profiles:
+    intl_test_status      intl_odi_status      intl_t20i_status
+    intl_test_last_year   intl_odi_last_year   intl_t20i_last_year
+    intl_retired_all      intl_available
+    intl_status_notes     intl_status_updated
+------------------------------------------------------------
+  Recommended SQL to verify:
+    SELECT intl_test_status, intl_odi_status, intl_t20i_status,
+           intl_available, COUNT(*)
+    FROM player_profiles
+    WHERE intl_status_updated IS NOT NULL
+    GROUP BY 1,2,3,4 ORDER BY 4 DESC, 1;
+------------------------------------------------------------
+  Next step — Team Selector module:
+    Filter pool  : WHERE intl_available = TRUE
+    Format filter: AND intl_t20i_status = 'Active'
+    Exclude      : Retired + Out 2Y+ players
+============================================================

@@ -1,0 +1,35 @@
+========================================================================
+  SCRIPT REPORT: expand_player_names.py  v1.0.0
+========================================================================
+  Start Time   : 2026-04-18 15:48:07
+  End Time     : 2026-04-18 15:53:31
+  Duration     : 323.8 seconds
+  OpenAI Model : gpt-4o
+  Outcome      : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Summary:
+  - Names processed this run  : 1,198
+  - Already full names        : 247
+  - Expanded (High conf)      : 833
+  - Expanded (Medium conf)    : 20
+  - Expanded (Low conf)       : 36
+  - Unknown / not found       : 62
+  - Errors                    : 0
+  - Supabase rows uploaded    : 0
+────────────────────────────────────────────────────────────────────────
+  NEXT STEP:
+  Use player_name_map.espn_search_name (instead of raw player_name) when
+  calling scrape_player_profiles.py to match names on ESPN Cricinfo.
+
+  To fix any wrong expansions, UPDATE the row manually:
+    UPDATE player_name_map
+       SET full_name = 'Correct Name',
+           espn_search_name = 'Correct Name',
+           confidence = 'High',
+           source = 'Manual',
+           updated_at = datetime('now')
+     WHERE short_name = 'V X Name';
+────────────────────────────────────────────────────────────────────────
+  Local DB     : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\db\cricket.db
+  Log          : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\expand_names_20260418_154807.log
+========================================================================

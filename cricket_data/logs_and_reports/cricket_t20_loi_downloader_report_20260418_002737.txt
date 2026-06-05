@@ -1,0 +1,17 @@
+======================================================================
+  SCRIPT REPORT: cricket_t20_loi_downloader.py  v1.0.0
+======================================================================
+  Start Time : 2026-04-18 00:27:37
+  End Time   : 2026-04-18 00:30:55
+  Duration   : 198.2 seconds
+  Outcome    : SUCCESS
+----------------------------------------------------------------------
+  Summary:
+  - T20 Database: C:\Users\sandeep\Downloads\Claudes\Cricket\data\cricket_t20.db
+  - LOI Database: C:\Users\sandeep\Downloads\Claudes\Cricket\data\cricket_loi.db
+  - Total matches inserted: 5159
+  - Errors encountered: 0
+----------------------------------------------------------------------
+  Databases created and populated with T20 and LOI data.
+  Ready for analytics and rankings computation.
+======================================================================

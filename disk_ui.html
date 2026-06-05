@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Disk Analyzer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#f0f2f5;color:#1a1a2e;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* TOP BAR */
+.topbar{background:#1a1a2e;color:white;padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.topbar h1{font-size:15px;font-weight:700;white-space:nowrap;margin-right:4px}
+.path-inp{flex:1;min-width:180px;background:#2d2d4a;border:1px solid #444;color:white;border-radius:5px;padding:5px 10px;font-size:13px}
+.path-inp::placeholder{color:#666}
+.btn{padding:5px 12px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-scan{background:#16a34a;color:white}
+.btn-browse{background:#475569;color:white}
+.btn-danger{background:#dc2626;color:white}
+.btn-ghost{background:transparent;border:1px solid #555;color:#ccc}
+.topbar select{background:#2d2d4a;border:1px solid #444;color:#ccc;border-radius:4px;padding:4px 7px;font-size:11px;cursor:pointer;max-width:220px}
+.scan-meta{font-size:10px;color:#777;white-space:nowrap}
+
+/* PROGRESS */
+.prog-wrap{background:#0f172a;padding:6px 14px;flex-shrink:0;display:none}
+.prog-wrap.active{display:block}
+.prog-bg{background:#1e293b;border-radius:4px;height:6px;overflow:hidden;margin-bottom:4px}
+.prog-fill{height:100%;background:linear-gradient(90deg,#16a34a,#4f8ef7);border-radius:4px;transition:width .4s;width:0%}
+.prog-txt{font-size:11px;color:#94a3b8;display:flex;gap:16px;flex-wrap:wrap}
+.prog-txt b{color:#7fb3ff}
+
+/* FILTER BAR */
+.filterbar{background:white;border-bottom:1px solid #e0e0e0;padding:6px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.filterbar label{font-size:11px;color:#666;font-weight:600;white-space:nowrap}
+.filterbar input,.filterbar select{border:1px solid #ccc;border-radius:4px;padding:3px 7px;font-size:12px}
+.filterbar input[type=text]{width:135px}
+.fsep{width:1px;height:16px;background:#ddd;flex-shrink:0}
+
+/* BREADCRUMB */
+.breadcrumb{background:#f7f8fc;border-bottom:1px solid #e8e8e8;padding:5px 14px;font-size:12px;display:flex;align-items:center;gap:3px;flex-shrink:0;flex-wrap:wrap;min-height:27px}
+.bc-item{color:#4f8ef7;cursor:pointer;padding:1px 4px;border-radius:3px}
+.bc-item:hover{background:#e8f0fe}
+.bc-sep{color:#bbb}
+.bc-cur{font-weight:700;color:#1a1a2e}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* TREE PANEL */
+.tree-panel{width:340px;min-width:160px;max-width:560px;background:white;border-right:2px solid #e8e8e8;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.panel-hdr{padding:6px 11px;background:#f7f8fc;border-bottom:1px solid #eee;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
+.panel-hdr .act{cursor:pointer;color:#4f8ef7;text-transform:none;font-weight:600;font-size:11px}
+.tree-scroll{flex:1;overflow-y:auto;padding:3px 0}
+.ti{display:flex;align-items:center;padding:3px 5px 3px 0;cursor:pointer;border-radius:5px;margin:1px 3px;user-select:none}
+.ti:hover{background:#f0f4ff}
+.ti.active{background:#e8f0fe}
+.ti.active .ti-name{color:#2563eb;font-weight:600}
+.ti-indent{flex-shrink:0}
+.ti-tog{width:14px;text-align:center;font-size:9px;color:#ccc;flex-shrink:0}
+.ti-icon{margin-right:4px;font-size:12px;flex-shrink:0}
+.ti-name{font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ti-size{font-size:11px;font-weight:700;white-space:nowrap;margin-left:5px;flex-shrink:0}
+.sz-xl{color:#dc2626}.sz-lg{color:#ea580c}.sz-md{color:#ca8a04}.sz-sm{color:#16a34a}.sz-xs{color:#94a3b8}
+
+/* VIZ PANEL */
+.viz-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f7f8fc}
+.viz-tabs{display:flex;gap:4px;padding:7px 11px 0}
+.vtab{padding:4px 12px;border-radius:6px 6px 0 0;font-size:12px;font-weight:600;cursor:pointer;background:#e2e8f0;color:#64748b;border:none;border-bottom:2px solid transparent}
+.vtab.active{background:white;color:#2563eb;border-bottom:2px solid #2563eb}
+.viz-content{flex:1;overflow:hidden;background:white;margin:0 11px;border-radius:0 6px 6px 6px;padding:10px;display:flex;flex-direction:column;gap:5px}
+.viz-hint{font-size:10px;color:#94a3b8;flex-shrink:0}
+
+/* TREEMAP */
+#treemap-svg{width:100%;flex:1;display:block;min-height:80px}
+.tm-cell{cursor:pointer}
+.tm-cell rect{transition:opacity .15s}
+.tm-cell:hover rect{opacity:.82}
+
+/* BAR CHART */
+.bar-scroll{flex:1;overflow-y:auto}
+.bar-row{display:flex;align-items:center;gap:6px;padding:3px 2px;cursor:pointer;border-radius:4px}
+.bar-row:hover{background:#f8fafc}
+.bar-lbl{font-size:12px;width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.bar-wrap{flex:1;background:#f1f5f9;border-radius:3px;height:17px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:5px}
+.bar-fill span{font-size:10px;color:white;font-weight:600;white-space:nowrap}
+.bar-sz{font-size:11px;font-weight:700;width:65px;text-align:right;flex-shrink:0}
+.bar-pct{font-size:10px;color:#94a3b8;width:36px;text-align:right;flex-shrink:0}
+
+/* TOP FILES */
+.files-hdr{font-size:12px;font-weight:700;color:#475569;padding:2px 0 6px;flex-shrink:0}
+.files-scroll{flex:1;overflow-y:auto}
+.file-row{display:flex;align-items:center;gap:6px;padding:4px;border-radius:4px;border-bottom:1px solid #f1f5f9}
+.file-row:last-child{border:none}
+.file-rank{font-size:10px;color:#94a3b8;width:18px;text-align:center;flex-shrink:0}
+.file-icon{font-size:13px;flex-shrink:0}
+.file-name{font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-bar-w{width:90px;background:#f1f5f9;border-radius:3px;height:5px;overflow:hidden;flex-shrink:0}
+.file-bar-f{height:100%;border-radius:3px;background:#4f8ef7}
+.file-size{font-size:11px;font-weight:700;color:#475569;width:65px;text-align:right;flex-shrink:0}
+.no-data{font-size:12px;color:#94a3b8;padding:20px;text-align:center}
+
+/* STATS BAR */
+.statsbar{background:white;border-top:1px solid #e0e0e0;padding:5px 14px;display:flex;gap:16px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column}
+.stat-val{font-size:14px;font-weight:800;color:#1a1a2e}
+.stat-lbl{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.5px}
+.disk-bw{flex:1;min-width:60px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.disk-bf{height:100%;border-radius:3px;background:linear-gradient(90deg,#4f8ef7,#dc2626)}
+
+/* RESIZE HANDLE */
+.rh{width:4px;cursor:col-resize;background:transparent;flex-shrink:0}
+.rh:hover{background:#4f8ef7}
+
+/* TOOLTIP */
+#tt{position:fixed;background:#1e293b;color:white;border-radius:8px;padding:9px 13px;font-size:12px;pointer-events:none;display:none;z-index:1000;max-width:240px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#tt h4{font-size:12px;color:#7fb3ff;margin-bottom:5px;word-break:break-all}
+#tt table{border-collapse:collapse;width:100%}
+#tt td{padding:2px 0}
+#tt td:last-child{text-align:right;font-weight:700}
+#tt tr{border-bottom:1px solid #334155}
+#tt tr:last-child{border:none}
+.tt-ftitle{font-size:10px;color:#94a3b8;padding-top:5px;padding-bottom:2px;border-top:1px solid #334155;margin-top:4px;display:block}
+.tt-file{display:flex;justify-content:space-between;font-size:11px;padding:1px 0}
+.tt-fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.tt-fs{color:#7fb3ff;font-weight:700;white-space:nowrap;margin-left:8px}
+
+/* BROWSE MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:white;border-radius:10px;width:520px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-hdr h3{font-size:15px;font-weight:700}
+.modal-hdr button{background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;padding:0 4px}
+.modal-hdr button:hover{color:#1a1a2e}
+.modal-path{padding:10px 16px;border-bottom:1px solid #f1f5f9;display:flex;gap:6px}
+.modal-path input{flex:1;border:1px solid #ccc;border-radius:5px;padding:5px 9px;font-size:13px}
+.modal-path button{padding:5px 12px;background:#4f8ef7;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600}
+.modal-body{flex:1;overflow-y:auto;padding:6px 8px}
+.bi{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;cursor:pointer;font-size:13px}
+.bi:hover{background:#f0f4ff}
+.bi.selected{background:#e8f0fe;color:#2563eb;font-weight:600}
+.bi-up{color:#64748b;font-style:italic}
+.modal-ftr{padding:10px 16px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end}
+.modal-ftr .sel-p{font-size:11px;color:#64748b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:center}
+
+/* EMPTY STATE */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;gap:10px;padding:40px}
+.es-icon{font-size:48px}
+.empty-state h2{font-size:16px;font-weight:700;color:#475569}
+.empty-state p{font-size:13px;text-align:center;max-width:300px}
+
+/* MISC */
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <h1>&#128194; Disk Analyzer</h1>
+  <input id="pathInput" class="path-inp" type="text" placeholder="Enter folder path to scan&hellip;" />
+  <button class="btn btn-browse" onclick="openBrowse()">&#128194; Browse</button>
+  <button id="scanBtn" class="btn btn-scan" onclick="startScan()">&#9654; Scan</button>
+  <div class="fsep" style="background:#333"></div>
+  <select id="histSel"><option value="">&#8212; select a past scan &#8212;</option></select>
+  <button class="btn btn-danger hidden" id="delBtn" onclick="deleteScan()" title="Delete this scan">&#128465;</button>
+  <div class="scan-meta" id="scanMeta"></div>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog-wrap" id="progWrap">
+  <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-txt">
+    <span><b id="pFolders">0</b> folders</span>
+    <span><b id="pFiles">0</b> files</span>
+    <span>In: <b id="pCurrent" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle">&#8212;</b></span>
+    <span><b id="pElapsed">0</b>s elapsed</span>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filterbar hidden" id="filterbar">
+  <label>Min size:</label>
+  <select id="fSize" onchange="applyFilters()">
+    <option value="0">All sizes</option>
+    <option value="1048576">&ge; 1 MB</option>
+    <option value="10485760">&ge; 10 MB</option>
+    <option value="104857600" selected>&ge; 100 MB</option>
+    <option value="1073741824">&ge; 1 GB</option>
+    <option value="10737418240">&ge; 10 GB</option>
+  </select>
+  <div class="fsep"></div>
+  <label>Search:</label>
+  <input type="text" id="fSearch" placeholder="folder name&hellip;" oninput="applyFilters()"/>
+  <div class="fsep"></div>
+  <label>Sort:</label>
+  <select id="fSort" onchange="applyFilters()">
+    <option value="size">Size &darr;</option>
+    <option value="name">Name A&ndash;Z</option>
+    <option value="files">Files &darr;</option>
+  </select>
+  <div class="fsep"></div>
+  <label>Tree depth:</label>
+  <select id="fDepth" onchange="renderTree()">
+    <option value="2">2 levels</option>
+    <option value="3" selected>3 levels</option>
+    <option value="4">4 levels</option>
+    <option value="99">All</option>
+  </select>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb hidden" id="breadcrumb"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="tree-panel hidden" id="treePanel">
+    <div class="panel-hdr">
+      <span style="color:#666;cursor:default">Folder Tree</span>
+      <span class="act" onclick="collapseAll()">Collapse All</span>
+    </div>
+    <div class="tree-scroll" id="treeScroll"></div>
+  </div>
+  <div class="rh hidden" id="rh"></div>
+
+  <div class="viz-panel" id="vizPanel">
+    <div class="empty-state" id="emptyState">
+      <div class="es-icon">&#128194;</div>
+      <h2>No scan loaded</h2>
+      <p>Enter a folder path above and click <strong>Scan</strong>, or pick a previous scan from the dropdown.</p>
+    </div>
+    <div id="vizMain" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="viz-tabs">
+        <button class="vtab active" id="tab-tm"  onclick="switchTab('tm')">Treemap</button>
+        <button class="vtab"        id="tab-bar" onclick="switchTab('bar')">Bar Chart</button>
+        <button class="vtab"        id="tab-tf"  onclick="switchTab('tf')">Top Files</button>
+      </div>
+      <div class="viz-content">
+        <div id="pane-tm" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+          <div class="viz-hint">Click a block to drill in &nbsp;&bull;&nbsp; Breadcrumb to go up &nbsp;&bull;&nbsp; Hover for details &nbsp;&bull;&nbsp; Backspace = up one level</div>
+          <svg id="treemap-svg"></svg>
+        </div>
+        <div id="pane-bar" class="hidden" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+          <div class="viz-hint">Click a bar to drill in &nbsp;&bull;&nbsp; Hover for details</div>
+          <div class="bar-scroll" id="barContent"></div>
+        </div>
+        <div id="pane-tf" class="hidden" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+          <div class="files-hdr" id="filesHdr">Top files in current folder</div>
+          <div class="files-scroll" id="filesContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="statsbar hidden" id="statsbar">
+  <div class="stat"><span class="stat-val" id="st-name">&#8212;</span><span class="stat-lbl">Root</span></div>
+  <div class="stat"><span class="stat-val" id="st-size">&#8212;</span><span class="stat-lbl">Scanned</span></div>
+  <div class="stat"><span class="stat-val" id="st-files">&#8212;</span><span class="stat-lbl">Files</span></div>
+  <div class="stat"><span class="stat-val" id="st-fldrs">&#8212;</span><span class="stat-lbl">Folders</span></div>
+  <div class="stat"><span class="stat-val" id="st-free">&#8212;</span><span class="stat-lbl">Disk Free</span></div>
+  <div class="stat"><span class="stat-val" id="st-dtot">&#8212;</span><span class="stat-lbl">Disk Total</span></div>
+  <div class="disk-bw"><div class="disk-bf" id="diskFill"></div></div>
+  <div class="stat"><span class="stat-val" id="st-pct">&#8212;</span><span class="stat-lbl">Used %</span></div>
+  <div class="stat" style="margin-left:auto"><span class="stat-val" id="st-dur">&#8212;</span><span class="stat-lbl">Scan time</span></div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tt">
+  <h4 id="tt-name"></h4>
+  <table>
+    <tr><td>Total size</td><td id="tt-size"></td></tr>
+    <tr><td>Own files size</td><td id="tt-own"></td></tr>
+    <tr><td>Files</td><td id="tt-fc"></td></tr>
+    <tr><td>Subfolders</td><td id="tt-fdc"></td></tr>
+    <tr><td>% of view</td><td id="tt-pct"></td></tr>
+  </table>
+  <span class="tt-ftitle hidden" id="tt-ftitle">Top files:</span>
+  <div id="tt-files"></div>
+</div>
+
+<!-- BROWSE MODAL -->
+<div class="modal-ov hidden" id="browseModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>&#128194; Select Folder</h3>
+      <button onclick="closeBrowse()">&#x2715;</button>
+    </div>
+    <div class="modal-path">
+      <input id="browseInput" type="text" placeholder="Type a path and press Go&hellip;"
+             onkeydown="if(event.key==='Enter')browsePath(this.value)"/>
+      <button onclick="browsePath(document.getElementById('browseInput').value)">Go</button>
+    </div>
+    <div class="modal-body" id="browseItems"></div>
+    <div class="modal-ftr">
+      <div class="sel-p" id="selPath">&#8212;</div>
+      <button class="btn btn-ghost" onclick="closeBrowse()">Cancel</button>
+      <button class="btn btn-scan" onclick="selectBrowsed()">&#10003; Select</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PALETTE ──────────────────────────────────────────────────────────────────
+const PAL=['#dc2626','#ea580c','#d97706','#16a34a','#0284c7','#7c3aed',
+           '#db2777','#0891b2','#65a30d','#9333ea','#b45309','#0f766e'];
+const col=i=>PAL[i%PAL.length];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let scan=null, currentNode=null, navStack=[], expandedPaths=new Set();
+let activeTab='tm', minSize=104857600, searchTerm='', sortMode='size';
+let pollTimer=null, browseSelected='', progStart=0, progInt=null;
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function fmtSize(b){
+  if(!b)return'0 B';
+  const u=['B','KB','MB','GB','TB'];let i=0;
+  while(b>=1024&&i<u.length-1){b/=1024;i++;}
+  return b.toFixed(i===0?0:1)+' '+u[i];
+}
+function fmtNum(n){return(n||0).toLocaleString();}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function szCls(b,pb){
+  if(!pb)return'sz-md';const p=b/pb;
+  return p>.5?'sz-xl':p>.25?'sz-lg':p>.1?'sz-md':p>.02?'sz-sm':'sz-xs';
+}
+function fileIcon(name){
+  const e=name.split('.').pop().toLowerCase();
+  return {mp4:'&#127909;',mkv:'&#127909;',avi:'&#127909;',mov:'&#127909;',
+    mp3:'&#127925;',wav:'&#127925;',flac:'&#127925;',
+    jpg:'&#128444;',jpeg:'&#128444;',png:'&#128444;',gif:'&#128444;',webp:'&#128444;',
+    pdf:'&#128196;',doc:'&#128209;',docx:'&#128209;',
+    xls:'&#128202;',xlsx:'&#128202;',ppt:'&#128202;',pptx:'&#128202;',
+    zip:'&#128230;',rar:'&#128230;','7z':'&#128230;',tar:'&#128230;',gz:'&#128230;',
+    exe:'&#9881;',msi:'&#9881;',iso:'&#128191;',
+    sql:'&#128439;',db:'&#128439;',sqlite:'&#128439;'}[e]||'&#128196;';
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+async function init(){await loadScanList();setupResize();}
+
+async function loadScanList(){
+  const r=await fetch('/api/scans').then(r=>r.json()).catch(()=>[]);
+  const sel=document.getElementById('histSel');
+  sel.innerHTML='<option value="">&#8212; select a past scan &#8212;</option>';
+  r.forEach((s,i)=>{
+    const o=document.createElement('option');
+    o.value=s.id;
+    const nm=s.scan_path.replace(/\\/g,'/').split('/').filter(Boolean).pop()||s.scan_path;
+    o.textContent=s.scan_time+'  ·  '+nm+'  ('+fmtSize(s.total_size)+')';
+    sel.appendChild(o);
+  });
+  sel.onchange=()=>{if(sel.value)loadScan(+sel.value);};
+  if(r.length){loadScan(r[r.length-1].id);sel.value=r[r.length-1].id;}
+}
+
+async function loadScan(id){
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('vizMain').classList.remove('hidden');
+  document.getElementById('vizMain').style.display='flex';
+  scan=await fetch('/api/scan/'+id).then(r=>r.json());
+  navStack=[];currentNode=scan.tree;expandedPaths.clear();
+  document.getElementById('histSel').value=id;
+  document.getElementById('delBtn').classList.remove('hidden');
+  showUI();refreshAll();
+}
+
+function showUI(){
+  ['filterbar','breadcrumb','treePanel','rh','statsbar'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.classList.remove('hidden');el.style.display='';}
+  });
+}
+function refreshAll(){updateMeta();updateStats();renderBreadcrumb();renderTree();renderViz();}
+
+function updateMeta(){
+  document.getElementById('scanMeta').textContent='Scanned '+scan.scan_time+' \xb7 '+scan.duration_seconds+'s';
+}
+function updateStats(){
+  const t=scan,nm=t.scan_path.replace(/\\/g,'/').split('/').filter(Boolean).pop()||t.scan_path;
+  document.getElementById('st-name').textContent=nm;
+  document.getElementById('st-size').textContent=fmtSize(t.total_size);
+  document.getElementById('st-files').textContent=fmtNum(t.total_files);
+  document.getElementById('st-fldrs').textContent=fmtNum(t.total_folders);
+  document.getElementById('st-free').textContent=t.disk_free?fmtSize(t.disk_free):'&#8212;';
+  document.getElementById('st-dtot').textContent=t.disk_total?fmtSize(t.disk_total):'&#8212;';
+  document.getElementById('st-dur').textContent=t.duration_seconds+'s';
+  if(t.disk_total>0){
+    const pct=((t.disk_total-t.disk_free)/t.disk_total*100).toFixed(1);
+    document.getElementById('st-pct').textContent=pct+'%';
+    document.getElementById('diskFill').style.width=pct+'%';
+  }
+}
+
+// ── SCAN ─────────────────────────────────────────────────────────────────────
+async function startScan(){
+  const path=document.getElementById('pathInput').value.trim();
+  if(!path){alert('Please enter a folder path to scan.');return;}
+  document.getElementById('scanBtn').disabled=true;
+  document.getElementById('scanBtn').textContent='Scanning\u2026';
+  showProg(true);progStart=Date.now();
+  progInt=setInterval(()=>{document.getElementById('pElapsed').textContent=Math.floor((Date.now()-progStart)/1000);},1000);
+  const r=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path})}).then(r=>r.json()).catch(e=>({error:String(e)}));
+  if(r.error){alert('Error: '+r.error);scanDone();return;}
+  pollProgress(r.job_id);
+}
+
+function pollProgress(jid){
+  pollTimer=setInterval(async()=>{
+    const p=await fetch('/api/progress/'+jid).then(r=>r.json()).catch(()=>null);
+    if(!p)return;
+    document.getElementById('pFolders').textContent=fmtNum(p.folders_scanned);
+    document.getElementById('pFiles').textContent=fmtNum(p.files_scanned);
+    const parts=(p.current_dir||'').replace(/\\/g,'/').split('/').filter(Boolean);
+    document.getElementById('pCurrent').textContent=parts.slice(-2).join('/');
+    const t=(Date.now()-progStart)/1000;
+    document.getElementById('progFill').style.width=(20+Math.abs(Math.sin(t*.5))*60)+'%';
+    if(p.status==='done'){
+      clearInterval(pollTimer);
+      document.getElementById('progFill').style.width='100%';
+      setTimeout(async()=>{showProg(false);scanDone();await loadScanList();if(p.scan_id)loadScan(p.scan_id);},500);
+    } else if(p.status==='error'){
+      clearInterval(pollTimer);showProg(false);scanDone();alert('Scan failed: '+p.error);
+    }
+  },800);
+}
+
+function scanDone(){clearInterval(progInt);document.getElementById('scanBtn').disabled=false;document.getElementById('scanBtn').textContent='\u25ba Scan';}
+function showProg(on){const w=document.getElementById('progWrap');on?(w.classList.add('active'),w.style.display='block'):(w.classList.remove('active'),w.style.display='none');}
+
+async function deleteScan(){
+  if(!scan||!document.getElementById('histSel').value)return;
+  if(!confirm('Delete this scan from history?'))return;
+  await fetch('/api/scan/'+document.getElementById('histSel').value,{method:'DELETE'});
+  scan=null;currentNode=null;
+  document.getElementById('delBtn').classList.add('hidden');
+  document.getElementById('vizMain').classList.add('hidden');
+  document.getElementById('emptyState').classList.remove('hidden');
+  ['filterbar','breadcrumb','treePanel','rh','statsbar'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden');});
+  await loadScanList();
+}
+
+// ── BREADCRUMB ────────────────────────────────────────────────────────────────
+function renderBreadcrumb(){
+  const bc=document.getElementById('breadcrumb');bc.innerHTML='';
+  const stack=[scan.tree,...navStack];
+  stack.forEach((node,i)=>{
+    if(i>0){const s=document.createElement('span');s.className='bc-sep';s.textContent='›';bc.appendChild(s);}
+    const el=document.createElement('span');
+    if(i===stack.length-1){el.className='bc-cur';el.textContent=node.name;}
+    else{el.className='bc-item';el.textContent=node.name;el.onclick=()=>navTo(i);}
+    bc.appendChild(el);
+  });
+}
+function navTo(d){
+  if(d===0){navStack=[];currentNode=scan.tree;}
+  else{navStack=navStack.slice(0,d);currentNode=navStack[navStack.length-1];}
+  renderBreadcrumb();renderTree();renderViz();
+}
+function drillInto(node){
+  if(!node.children||!node.children.length)return;
+  navStack.push(node);currentNode=node;expandedPaths.add(node.path);
+  renderBreadcrumb();renderTree();renderViz();
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────────────────
+function applyFilters(){
+  minSize=+document.getElementById('fSize').value;
+  searchTerm=document.getElementById('fSearch').value.trim().toLowerCase();
+  sortMode=document.getElementById('fSort').value;
+  renderTree();renderViz();
+}
+function filterSort(ch){
+  if(!ch)return[];
+  let r=ch.filter(c=>(!minSize||c.size>=minSize)&&(!searchTerm||c.name.toLowerCase().includes(searchTerm)));
+  if(sortMode==='size')r.sort((a,b)=>b.size-a.size);
+  else if(sortMode==='name')r.sort((a,b)=>a.name.localeCompare(b.name));
+  else r.sort((a,b)=>b.file_count-a.file_count);
+  return r;
+}
+
+// ── TREE ─────────────────────────────────────────────────────────────────────
+function renderTree(){
+  const c=document.getElementById('treeScroll');c.innerHTML='';
+  addNode(c,scan.tree,0,+document.getElementById('fDepth').value,scan.tree.size);
+}
+function addNode(cont,node,depth,maxD,rootSz){
+  if(depth>maxD)return;
+  const row=document.createElement('div');
+  row.className='ti'+(node===currentNode?' active':'');
+  const ind=document.createElement('span');
+  ind.className='ti-indent';ind.style.cssText='width:'+(depth*13+3)+'px;display:inline-block;flex-shrink:0';
+  row.appendChild(ind);
+  const hasK=node.children&&node.children.length>0,isE=expandedPaths.has(node.path);
+  const tog=document.createElement('span');tog.className='ti-tog';tog.textContent=hasK?(isE?'▼':'▶'):'·';row.appendChild(tog);
+  const ico=document.createElement('span');ico.className='ti-icon';ico.textContent=node===currentNode?'📂':'📁';row.appendChild(ico);
+  const nm=document.createElement('span');nm.className='ti-name';nm.textContent=node.name;row.appendChild(nm);
+  const sz=document.createElement('span');sz.className='ti-size '+szCls(node.size,rootSz);sz.textContent=fmtSize(node.size);row.appendChild(sz);
+  row.onclick=e=>{
+    e.stopPropagation();
+    if(hasK){if(isE)expandedPaths.delete(node.path);else expandedPaths.add(node.path);}
+    drillInto(node);
+  };
+  cont.appendChild(row);
+  if(hasK&&isE&&depth<maxD){
+    const kids=filterSort(node.children);
+    for(const k of kids)addNode(cont,k,depth+1,maxD,rootSz);
+    const hid=node.children.length-kids.length;
+    if(hid>0){const m=document.createElement('div');m.style.cssText='padding:2px 0 2px '+((depth+1)*13+31)+'px;font-size:10px;color:#94a3b8;font-style:italic';m.textContent='… '+hid+' more (below filter)';cont.appendChild(m);}
+  }
+}
+function collapseAll(){expandedPaths.clear();renderTree();}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  activeTab=tab;
+  ['tm','bar','tf'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('pane-'+t).classList.toggle('hidden',t!==tab);
+  });
+  renderViz();
+}
+function renderViz(){if(activeTab==='tm')renderTreemap();else if(activeTab==='bar')renderBarChart();else renderTopFiles();}
+
+// ── SQUARIFIED TREEMAP ────────────────────────────────────────────────────────
+function squarify(items,x,y,w,h){
+  if(!items||!items.length)return[];
+  const tot=items.reduce((s,i)=>s+i.size,0);
+  if(!tot||w<=0||h<=0)return[];
+  const sc=[...items].sort((a,b)=>b.size-a.size).map(it=>({...it,_a:Math.max(it.size/tot*w*h,1)}));
+  const res=[];
+  function worst(row,side){
+    if(!row.length)return Infinity;
+    const rs=row.reduce((s,r)=>s+r._a,0),len=rs/side;
+    return row.reduce((m,r)=>{const o=r._a/rs*side;return Math.max(m,Math.max(len/o,o/len));},0);
+  }
+  function layout(row,rx,ry,rw,rh){
+    const rs=row.reduce((s,r)=>s+r._a,0),horiz=rw>=rh,side=horiz?rh:rw,len=rs/side;
+    let off=0;
+    for(const r of row){const frac=r._a/rs;if(horiz){res.push({node:r,x:rx,y:ry+off,w:len,h:frac*side});off+=frac*side;}else{res.push({node:r,x:rx+off,y:ry,w:frac*side,h:len});off+=frac*side;}}
+    return horiz?{x:rx+len,y:ry,w:rw-len,h:rh}:{x:rx,y:ry+len,w:rw,h:rh-len};
+  }
+  let rx=x,ry=y,rw=w,rh=h,row=[];
+  for(const item of sc){
+    const side=(rw>=rh)?rh:rw;
+    if(!row.length){row.push(item);continue;}
+    if(worst([...row,item],side)<=worst(row,side)){row.push(item);}
+    else{const rem=layout(row,rx,ry,rw,rh);rx=rem.x;ry=rem.y;rw=rem.w;rh=rem.h;row=[item];}
+  }
+  if(row.length)layout(row,rx,ry,rw,rh);
+  return res;
+}
+
+function renderTreemap(){
+  const svg=document.getElementById('treemap-svg');
+  const W=svg.parentElement.clientWidth||400,H=svg.parentElement.clientHeight-22||300;
+  if(W<10||H<10){requestAnimationFrame(renderTreemap);return;}
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('width',W);svg.setAttribute('height',H);svg.innerHTML='';
+  const kids=filterSort(currentNode.children||[]);
+  if(!kids.length){
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',W/2);t.setAttribute('y',H/2);t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill','#94a3b8');t.setAttribute('font-size','13');t.setAttribute('font-family','Segoe UI,sans-serif');
+    t.textContent='No subfolders match the current filter';svg.appendChild(t);return;
+  }
+  const P=2;
+  squarify(kids,P,P,W-P*2,H-P*2).forEach(({node,x,y,w,h},idx)=>{
+    if(w<2||h<2)return;
+    const c=col(idx),g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','tm-cell');
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',x);rect.setAttribute('y',y);rect.setAttribute('width',Math.max(0,w-2));rect.setAttribute('height',Math.max(0,h-2));rect.setAttribute('rx','4');rect.setAttribute('fill',c);g.appendChild(rect);
+    const mc=Math.max(2,Math.floor(w/7.5));
+    function addT(txt,ay,fs,op){
+      if(w<28||h<12)return;
+      const t2=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t2.setAttribute('x',x+5);t2.setAttribute('y',y+ay);t2.setAttribute('fill',op?'rgba(255,255,255,'+op+')':'white');
+      t2.setAttribute('font-size',Math.min(fs,w*0.12,h*0.3));t2.setAttribute('font-weight','700');t2.setAttribute('font-family','Segoe UI,sans-serif');t2.setAttribute('pointer-events','none');
+      t2.textContent=txt.length>mc?txt.slice(0,mc-1)+'\u2026':txt;g.appendChild(t2);
+    }
+    if(h>17)addT(node.name,Math.min(16,h*.38),12,null);
+    if(h>30)addT(fmtSize(node.size),Math.min(28,h*.62),11,'0.85');
+    if(h>44){const pct=currentNode.size>0?(node.size/currentNode.size*100).toFixed(1):0;addT(pct+'%',Math.min(41,h*.83),10,'0.6');}
+    g.addEventListener('click',()=>drillInto(node));
+    g.addEventListener('mouseenter',e=>showTT(e,node));
+    g.addEventListener('mousemove',moveTT);
+    g.addEventListener('mouseleave',hideTT);
+    svg.appendChild(g);
+  });
+}
+
+// ── BAR CHART ─────────────────────────────────────────────────────────────────
+function renderBarChart(){
+  const cnt=document.getElementById('barContent');cnt.innerHTML='';
+  const kids=filterSort(currentNode.children||[]);
+  if(!kids.length){cnt.innerHTML='<div class="no-data">No subfolders match the current filter.</div>';return;}
+  const maxSz=kids[0].size||1;
+  kids.forEach((node,idx)=>{
+    const pct=currentNode.size>0?(node.size/currentNode.size*100).toFixed(1):0;
+    const bPct=(node.size/maxSz*100).toFixed(1);const c=col(idx);
+    const row=document.createElement('div');row.className='bar-row';
+    row.innerHTML='<div class="bar-lbl" title="'+esc(node.name)+'">&#128193; '+esc(node.name)+'</div>'+
+      '<div class="bar-wrap"><div class="bar-fill" style="width:'+bPct+'%;background:'+c+'">'+
+      '<span>'+(+bPct>22?esc(node.name):'')+'</span></div></div>'+
+      '<div class="bar-sz '+szCls(node.size,currentNode.size)+'">'+fmtSize(node.size)+'</div>'+
+      '<div class="bar-pct">'+pct+'%</div>';
+    row.onclick=()=>drillInto(node);
+    row.addEventListener('mouseenter',e=>showTT(e,node));
+    row.addEventListener('mousemove',moveTT);
+    row.addEventListener('mouseleave',hideTT);
+    cnt.appendChild(row);
+  });
+}
+
+// ── TOP FILES ─────────────────────────────────────────────────────────────────
+function renderTopFiles(){
+  const cnt=document.getElementById('filesContent');cnt.innerHTML='';
+  document.getElementById('filesHdr').textContent='Top 10 files directly in: '+currentNode.name;
+  const files=currentNode.top_files||[];
+  if(!files.length){cnt.innerHTML='<div class="no-data">No file data for this folder.<br>It may contain only subfolders, or files were all 0 bytes.</div>';return;}
+  const maxSz=files[0][1]||1;
+  files.forEach(([name,size],i)=>{
+    const row=document.createElement('div');row.className='file-row';
+    row.innerHTML='<div class="file-rank">'+(i+1)+'</div>'+
+      '<div class="file-icon">'+fileIcon(name)+'</div>'+
+      '<div class="file-name" title="'+esc(name)+'">'+esc(name)+'</div>'+
+      '<div class="file-bar-w"><div class="file-bar-f" style="width:'+(size/maxSz*100).toFixed(1)+'%"></div></div>'+
+      '<div class="file-size">'+fmtSize(size)+'</div>';
+    cnt.appendChild(row);
+  });
+}
+
+// ── TOOLTIP ──────────────────────────────────────────────────────────────────
+function showTT(e,node){
+  const tt=document.getElementById('tt');
+  document.getElementById('tt-name').textContent=node.name;
+  document.getElementById('tt-size').textContent=fmtSize(node.size);
+  const own=node.size-(node.children||[]).reduce((s,c)=>s+c.size,0);
+  document.getElementById('tt-own').textContent=fmtSize(Math.max(0,own));
+  document.getElementById('tt-fc').textContent=fmtNum(node.file_count);
+  document.getElementById('tt-fdc').textContent=fmtNum(node.folder_count);
+  document.getElementById('tt-pct').textContent=(currentNode.size>0?(node.size/currentNode.size*100).toFixed(1):0)+'%';
+  const files=node.top_files||[];
+  const ftitle=document.getElementById('tt-ftitle'),flist=document.getElementById('tt-files');
+  if(files.length){
+    ftitle.classList.remove('hidden');
+    flist.innerHTML=files.slice(0,5).map(([n,s])=>'<div class="tt-file"><span class="tt-fn">'+fileIcon(n)+' '+esc(n)+'</span><span class="tt-fs">'+fmtSize(s)+'</span></div>').join('');
+  }else{ftitle.classList.add('hidden');flist.innerHTML='';}
+  tt.style.display='block';moveTT(e);
+}
+function moveTT(e){
+  const tt=document.getElementById('tt');
+  let l=e.clientX+14,t=e.clientY-10;
+  if(l+250>window.innerWidth)l=e.clientX-250;
+  if(t+210>window.innerHeight)t=e.clientY-210;
+  tt.style.left=l+'px';tt.style.top=t+'px';
+}
+function hideTT(){document.getElementById('tt').style.display='none';}
+
+// ── BROWSE MODAL ──────────────────────────────────────────────────────────────
+async function openBrowse(){
+  document.getElementById('browseModal').classList.remove('hidden');
+  const cur=document.getElementById('pathInput').value.trim();
+  if(cur)await browsePath(cur);else await fetchDrives();
+}
+function closeBrowse(){document.getElementById('browseModal').classList.add('hidden');}
+function selectBrowsed(){if(browseSelected)document.getElementById('pathInput').value=browseSelected;closeBrowse();}
+
+async function fetchDrives(){
+  const r=await fetch('/api/drives').then(r=>r.json()).catch(()=>({drives:[]}));
+  const cnt=document.getElementById('browseItems');cnt.innerHTML='';
+  document.getElementById('browseInput').value='';
+  document.getElementById('selPath').textContent='Select a drive or folder';
+  r.drives.forEach(d=>{
+    const el=document.createElement('div');el.className='bi';
+    el.innerHTML='<span>&#128190;</span><span>'+esc(d)+'</span>';
+    el.onclick=()=>browsePath(d);cnt.appendChild(el);
+  });
+}
+
+async function browsePath(path){
+  if(!path){await fetchDrives();return;}
+  const r=await fetch('/api/browse?path='+encodeURIComponent(path)).then(r=>r.json()).catch(()=>null);
+  if(!r){alert('Cannot access: '+path);return;}
+  const cnt=document.getElementById('browseItems');cnt.innerHTML='';
+  document.getElementById('browseInput').value=r.path;
+  browseSelected=r.path;document.getElementById('selPath').textContent=r.path;
+  if(r.parent){
+    const up=document.createElement('div');up.className='bi bi-up';
+    up.innerHTML='<span>&#11014;&#65039;</span><span>.. up to '+esc(r.parent)+'</span>';
+    up.onclick=()=>browsePath(r.parent);cnt.appendChild(up);
+  }
+  r.items.forEach(item=>{
+    const el=document.createElement('div');el.className='bi'+(item.path===browseSelected?' selected':'');
+    el.innerHTML='<span>&#128193;</span><span>'+esc(item.name)+'</span>';
+    el.onclick=()=>{browseSelected=item.path;browsePath(item.path);};cnt.appendChild(el);
+  });
+  if(!r.items.length){const m=document.createElement('div');m.style.cssText='padding:12px;color:#94a3b8;font-size:12px;text-align:center';m.textContent='(no subfolders)';cnt.appendChild(m);}
+}
+
+// ── RESIZE ────────────────────────────────────────────────────────────────────
+function setupResize(){
+  const h=document.getElementById('rh'),p=document.getElementById('treePanel');
+  let drag=false,sx=0,sw=0;
+  h.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sw=p.offsetWidth;document.body.style.cursor='col-resize';document.body.style.userSelect='none';});
+  document.addEventListener('mousemove',e=>{if(!drag)return;p.style.width=Math.min(560,Math.max(160,sw+e.clientX-sx))+'px';if(activeTab==='tm')renderTreemap();});
+  document.addEventListener('mouseup',()=>{drag=false;document.body.style.cursor='';document.body.style.userSelect='';});
+}
+
+// ── KEYBOARD ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeBrowse();
+  if((e.key==='Backspace'||e.key==='ArrowLeft')&&navStack.length&&document.activeElement.tagName!=='INPUT')
+    navTo(navStack.length-1);
+});
+
+// ── RESPONSIVE TREEMAP ────────────────────────────────────────────────────────
+new ResizeObserver(()=>{if(activeTab==='tm'&&currentNode)renderTreemap();}).observe(document.getElementById('pane-tm'));
+
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

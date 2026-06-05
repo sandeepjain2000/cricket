@@ -1,0 +1,15 @@
+========================================================================
+  SCRIPT REPORT: compute_bowler_ranks.py  v1.0.0
+========================================================================
+  Start Time  : 2026-04-22 21:15:41
+  End Time    : 2026-04-22 21:18:09
+  Duration    : 147.9 seconds
+  Outcome     : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Matches processed        : 3,579
+  Bowler rank rows created : 60,895
+  Delivery dimensions rows : 1,165,737
+  Errors                   : 0
+────────────────────────────────────────────────────────────────────────
+  Log file : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\bowler_ranks_20260422_211541.log
+========================================================================

@@ -1,0 +1,16 @@
+========================================================================
+  SCRIPT REPORT: scrape_player_profiles.py  v3.0.0
+========================================================================
+  Start Time  : 2026-04-18 18:32:09
+  End Time    : 2026-04-18 18:32:09
+  Duration    : 0.3 seconds
+  Outcome     : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Players processed : 0
+  Profiles found    : 0
+  Unknown           : 0
+  Errors            : 0
+  Supabase uploaded : 0
+────────────────────────────────────────────────────────────────────────
+  Log    : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\profiles_20260418_183209.log
+========================================================================

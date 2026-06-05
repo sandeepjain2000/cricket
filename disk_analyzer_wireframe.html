@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disk Space Analyzer — Wireframe</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+  /* ─── TOP BAR ─── */
+  .topbar {
+    background: #1a1a2e;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; }
+  .topbar .scan-info { font-size: 12px; color: #aaa; white-space: nowrap; }
+  .topbar .path-input {
+    flex: 1;
+    min-width: 200px;
+    background: #2d2d4a;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .btn-primary { background: #4f8ef7; color: white; }
+  .btn-warn    { background: #e87040; color: white; }
+  .btn-ghost   { background: transparent; border: 1px solid #555; color: #ccc; }
+
+  /* ─── FILTER BAR ─── */
+  .filterbar {
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .filterbar label { font-size: 12px; color: #666; font-weight: 600; }
+  .filterbar input, .filterbar select {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #fafafa;
+  }
+  .filterbar .sep { width: 1px; height: 20px; background: #ddd; margin: 0 4px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e8f0fe;
+    color: #4f8ef7;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .chip.active { background: #4f8ef7; color: white; }
+
+  /* ─── BREADCRUMB ─── */
+  .breadcrumb {
+    background: #f7f8fc;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 8px 20px;
+    font-size: 12px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .breadcrumb a { color: #4f8ef7; cursor: pointer; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep-bc { color: #bbb; margin: 0 2px; }
+  .breadcrumb .current { font-weight: 700; color: #1a1a2e; }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main {
+    display: flex;
+    height: calc(100vh - 120px);
+    overflow: hidden;
+  }
+
+  /* ─── LEFT: TREE PANEL ─── */
+  .tree-panel {
+    width: 380px;
+    min-width: 280px;
+    background: white;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 10px 16px;
+    background: #f7f8fc;
+    border-bottom: 1px solid #e8e8e8;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tree-scroll { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+  .tree-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 12px 5px 0;
+    cursor: pointer;
+    border-radius: 6px;
+    margin: 1px 6px;
+    position: relative;
+  }
+  .tree-item:hover { background: #f0f4ff; }
+  .tree-item.selected { background: #e8f0fe; }
+  .tree-item.selected .folder-name { color: #4f8ef7; font-weight: 700; }
+
+  .tree-indent { display: inline-block; }
+  .toggle-btn {
+    width: 18px;
+    text-align: center;
+    color: #aaa;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .folder-icon { margin-right: 5px; font-size: 14px; }
+  .folder-name { font-size: 13px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-size {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    white-space: nowrap;
+    margin-left: 8px;
+  }
+  .folder-size.large { color: #e04f4f; }
+  .folder-size.medium { color: #e08740; }
+  .folder-size.small { color: #40a870; }
+
+  /* Size bar inside tree */
+  .size-bar-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  .size-bar { height: 2px; border-radius: 1px; }
+
+  /* ─── RIGHT: VISUALIZATION PANEL ─── */
+  .viz-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f7f8fc;
+  }
+
+  /* Treemap area */
+  .treemap-area {
+    flex: 1;
+    padding: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Sunburst toggle */
+  .viz-toggle {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 0 4px 0;
+  }
+  .viz-toggle .vtab {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #e8e8e8;
+    color: #666;
+    border: none;
+  }
+  .viz-toggle .vtab.active { background: #4f8ef7; color: white; }
+
+  /* Treemap grid */
+  .treemap {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-auto-rows: 80px;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .tm-cell {
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .tm-cell:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .tm-cell .tc-name { font-size: 12px; font-weight: 700; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tm-cell .tc-size { font-size: 18px; font-weight: 800; color: rgba(255,255,255,0.9); }
+  .tm-cell .tc-pct  { font-size: 10px; color: rgba(255,255,255,0.7); }
+  .tm-cell .tc-count{ font-size: 10px; color: rgba(255,255,255,0.6); }
+
+  /* color scale */
+  .c1 { background: #e04f4f; }
+  .c2 { background: #e08740; }
+  .c3 { background: #c8b400; }
+  .c4 { background: #4aaa70; }
+  .c5 { background: #4f8ef7; }
+  .c6 { background: #8b4fe8; }
+  .c7 { background: #e84fa0; }
+  .c8 { background: #40b8c8; }
+
+  .tm-cell.big { grid-column: span 2; grid-row: span 2; }
+  .tm-cell.big .tc-size { font-size: 28px; }
+  .tm-cell.big .tc-name { font-size: 15px; }
+
+  /* ─── BOTTOM: STATS BAR ─── */
+  .stats-bar {
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    padding: 8px 20px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-size: 12px;
+    color: #555;
+    flex-wrap: wrap;
+  }
+  .stat-item { display: flex; flex-direction: column; align-items: flex-start; }
+  .stat-val { font-size: 16px; font-weight: 800; color: #1a1a2e; }
+  .stat-lbl { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Disk usage bar */
+  .disk-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 80px;
+  }
+  .disk-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #4f8ef7, #e04f4f);
+  }
+
+  /* ─── TOOLTIP DEMO ─── */
+  .tooltip-demo {
+    background: #1a1a2e;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    position: absolute;
+    right: 30px;
+    top: 180px;
+    width: 200px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    z-index: 10;
+  }
+  .tooltip-demo h4 { font-size: 13px; margin-bottom: 6px; color: #7fb3ff; }
+  .tooltip-demo .tr { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #333; }
+  .tooltip-demo .tr:last-child { border: none; }
+  .tooltip-arrow {
+    position: absolute;
+    left: -8px;
+    top: 16px;
+    width: 0; height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #1a1a2e;
+  }
+
+  /* ─── WIREFRAME LABEL ─── */
+  .wf-label {
+    position: fixed;
+    top: 0; right: 0;
+    background: #e04f4f;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 0 0 0 8px;
+    letter-spacing: 1px;
+    z-index: 100;
+  }
+
+  /* Resize handle */
+  .resize-handle {
+    width: 4px;
+    background: #e8e8e8;
+    cursor: col-resize;
+    flex-shrink: 0;
+  }
+  .resize-handle:hover { background: #4f8ef7; }
+
+  /* Annotation callouts */
+  .annotation {
+    background: #fffbea;
+    border: 1px dashed #c8a000;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10px;
+    color: #7a6000;
+    display: inline-block;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="wf-label">WIREFRAME</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <h1>🗂 Disk Analyzer</h1>
+  <input class="path-input" type="text" value="C:\Users\sandeep" placeholder="Folder path to scan…" />
+  <button class="btn btn-warn">▶ Scan Now</button>
+  <button class="btn btn-ghost">📂 Browse…</button>
+  <span class="scan-info">Last scan: Today 09:14 AM &nbsp;|&nbsp; 2m 34s</span>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filterbar">
+  <label>Min size:</label>
+  <select>
+    <option>All sizes</option>
+    <option>＞ 1 MB</option>
+    <option selected>＞ 100 MB</option>
+    <option>＞ 1 GB</option>
+    <option>＞ 10 GB</option>
+  </select>
+
+  <div class="sep"></div>
+
+  <label>Search folder:</label>
+  <input type="text" placeholder="e.g. node_modules" style="width:160px" />
+
+  <div class="sep"></div>
+
+  <label>Sort by:</label>
+  <select>
+    <option>Size ↓</option>
+    <option>Name A-Z</option>
+    <option>File count ↓</option>
+  </select>
+
+  <div class="sep"></div>
+
+  <label>Highlight:</label>
+  <span class="chip active">node_modules</span>
+  <span class="chip">.git</span>
+  <span class="chip active">Downloads</span>
+  <span class="chip">+ Add</span>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <span>📁</span>
+  <a>C:\</a><span class="sep-bc">›</span>
+  <a>Users</a><span class="sep-bc">›</span>
+  <a>sandeep</a><span class="sep-bc">›</span>
+  <span class="current">Downloads</span>
+  &nbsp;&nbsp;
+  <span style="color:#aaa;font-size:11px">← click any segment to drill up</span>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT: TREE -->
+  <div class="tree-panel">
+    <div class="panel-header">
+      <span>Folder Tree</span>
+      <span style="color:#4f8ef7;cursor:pointer;font-size:11px">Collapse All</span>
+    </div>
+    <div class="tree-scroll">
+
+      <!-- Root -->
+      <div class="tree-item">
+        <span class="tree-indent" style="width:4px"></span>
+        <span class="toggle-btn">▼</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">sandeep</span>
+        <span class="folder-size large">487 GB</span>
+      </div>
+
+      <!-- Level 1 -->
+      <div class="tree-item selected">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▼</span>
+        <span class="folder-icon">📂</span>
+        <span class="folder-name">Downloads</span>
+        <span class="folder-size large">210 GB</span>
+      </div>
+
+      <!-- Level 2 -->
+      <div class="tree-item">
+        <span class="tree-indent" style="width:38px"></span>
+        <span class="toggle-btn">▼</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Software</span>
+        <span class="folder-size large">95 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:38px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Videos</span>
+        <span class="folder-size medium">78 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:38px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Backups</span>
+        <span class="folder-size medium">37 GB</span>
+      </div>
+
+      <!-- Level 3 -->
+      <div class="tree-item">
+        <span class="tree-indent" style="width:56px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Installers_2025</span>
+        <span class="folder-size medium">62 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:56px"></span>
+        <span class="toggle-btn">—</span>
+        <span class="folder-icon">📄</span>
+        <span class="folder-name">Portable</span>
+        <span class="folder-size small">33 GB</span>
+      </div>
+
+      <div style="height:8px"></div>
+
+      <!-- Other top-level -->
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Documents</span>
+        <span class="folder-size medium">88 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">AppData</span>
+        <span class="folder-size medium">74 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Pictures</span>
+        <span class="folder-size small">48 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Videos</span>
+        <span class="folder-size small">41 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Desktop</span>
+        <span class="folder-size small">12 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">▶</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Music</span>
+        <span class="folder-size small">8 GB</span>
+      </div>
+      <div class="tree-item">
+        <span class="tree-indent" style="width:20px"></span>
+        <span class="toggle-btn">—</span>
+        <span class="folder-icon">📁</span>
+        <span class="folder-name">Contacts</span>
+        <span class="folder-size small">4 MB</span>
+      </div>
+
+      <div style="height:16px;padding:8px 16px;font-size:11px;color:#bbb;font-style:italic">
+        … 23 more folders hidden (below 100 MB threshold)
+      </div>
+    </div>
+  </div>
+
+  <div class="resize-handle"></div>
+
+  <!-- RIGHT: VISUALIZATION -->
+  <div class="viz-panel">
+    <div class="treemap-area">
+
+      <!-- Toggle tabs -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div class="viz-toggle">
+          <button class="vtab active">Treemap</button>
+          <button class="vtab">Bar Chart</button>
+          <button class="vtab">Sunburst</button>
+        </div>
+        <div style="font-size:12px;color:#888;">
+          📂 Downloads &nbsp;•&nbsp; 210.4 GB total &nbsp;•&nbsp; 3 direct subfolders &nbsp;•&nbsp; 4,821 files total
+        </div>
+      </div>
+
+      <!-- Treemap -->
+      <div class="treemap" style="position:relative;">
+
+        <!-- Big cell -->
+        <div class="tm-cell c1 big">
+          <div class="tc-name">📁 Software</div>
+          <div>
+            <div class="tc-size">95 GB</div>
+            <div class="tc-pct">45.2% of Downloads</div>
+            <div class="tc-count">2,340 files · 4 subfolders</div>
+          </div>
+        </div>
+
+        <div class="tm-cell c2" style="grid-row:span 2;">
+          <div class="tc-name">📁 Videos</div>
+          <div>
+            <div class="tc-size">78 GB</div>
+            <div class="tc-pct">37.1%</div>
+            <div class="tc-count">186 files</div>
+          </div>
+        </div>
+
+        <div class="tm-cell c4">
+          <div class="tc-name">📁 Backups</div>
+          <div>
+            <div class="tc-size">37 GB</div>
+            <div class="tc-pct">17.6%</div>
+          </div>
+        </div>
+
+        <div class="tm-cell c8" style="opacity:0.6;">
+          <div class="tc-name">📄 (loose files)</div>
+          <div>
+            <div class="tc-size">0.4 GB</div>
+            <div class="tc-pct">0.1%</div>
+          </div>
+        </div>
+
+        <!-- Tooltip demo -->
+        <div class="tooltip-demo">
+          <div class="tooltip-arrow"></div>
+          <h4>📁 Software</h4>
+          <div class="tr"><span>Total size</span><span><b>95.3 GB</b></span></div>
+          <div class="tr"><span>Own files</span><span>12.1 GB</span></div>
+          <div class="tr"><span>Subfolders</span><span>4</span></div>
+          <div class="tr"><span>Files</span><span>2,340</span></div>
+          <div class="tr"><span>% of parent</span><span>45.2%</span></div>
+          <div style="margin-top:8px;font-size:10px;color:#7fb3ff;cursor:pointer">
+            🔍 Click to drill into Software →
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-val">487 GB</span>
+        <span class="stat-lbl">Total Used</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val">513 GB</span>
+        <span class="stat-lbl">Free Space</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val">1 TB</span>
+        <span class="stat-lbl">Disk Size</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val">48.7%</span>
+        <span class="stat-lbl">Used</span>
+      </div>
+      <div class="disk-bar-wrap">
+        <div class="disk-bar-fill" style="width:48.7%"></div>
+      </div>
+      <div class="stat-item" style="margin-left:auto;">
+        <span class="stat-val">47,821</span>
+        <span class="stat-lbl">Total Files</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val">3,240</span>
+        <span class="stat-lbl">Folders</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Annotation overlay (wireframe notes) -->
+<div style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;z-index:99;">
+  <span class="annotation">① Click tree row → highlights treemap + drills down</span>
+  <span class="annotation">② Click treemap cell → navigates into that folder</span>
+  <span class="annotation">③ Breadcrumb → drill back up</span>
+  <span class="annotation">④ Filters apply instantly, no rescan</span>
+  <span class="annotation">⑤ "Scan Now" reruns Python, refreshes data</span>
+</div>
+
+</body>
+</html>

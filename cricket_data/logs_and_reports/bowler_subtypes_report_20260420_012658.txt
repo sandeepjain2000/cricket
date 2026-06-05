@@ -1,0 +1,35 @@
+========================================================================
+  SCRIPT REPORT: enrich_bowler_subtypes.py  v1.0.0
+========================================================================
+  Start Time  : 2026-04-20 01:26:58
+  End Time    : 2026-04-20 01:35:21
+  Duration    : 502.9 seconds
+  Outcome     : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Bowlers processed  : 578
+  Classified         : 578
+  Errors             : 0
+
+  Pace subtypes:
+    Pure Pace         : 118
+    Swing             : 1
+    Seam              : 0
+    Fast-medium       : 195
+
+  Spin subtypes:
+    Off-spin          : 102
+    Leg-spin          : 32
+    Left-arm orthodox : 71
+    Chinaman          : 3
+
+  Other:
+    Medium-pace       : 55
+    N/A               : 1
+
+  Confidence:
+    High   : 568
+    Medium : 10
+    Low    : 0
+────────────────────────────────────────────────────────────────────────
+  Log file : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\bowler_subtypes_20260420_012658.log
+========================================================================

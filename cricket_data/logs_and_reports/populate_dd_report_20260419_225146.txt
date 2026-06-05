@@ -1,0 +1,17 @@
+========================================================================
+  SCRIPT REPORT: populate_delivery_dimensions.py  v1.0.0
+========================================================================
+  Start Time  : 2026-04-19 22:51:46
+  End Time    : 2026-04-19 23:43:25
+  Duration    : 3098.2 seconds
+  Outcome     : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Summary:
+  - Deliveries processed : 1,167,215
+  - Dimensions inserted  : 1,167,215
+  - Errors               : 0
+  - Supabase rows        : 0
+────────────────────────────────────────────────────────────────────────
+  Database    : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\db\cricket.db
+  Log file    : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\populate_dd_20260419_225146.log
+========================================================================

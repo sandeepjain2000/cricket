@@ -1,0 +1,19 @@
+========================================================================
+  SCRIPT REPORT: scrape_player_profiles.py  v1.0.0
+========================================================================
+  Start Time  : 2026-04-18 15:30:42
+  End Time    : 2026-04-18 15:31:00
+  Duration    : 18.1 seconds
+  Outcome     : SUCCESS
+────────────────────────────────────────────────────────────────────────
+  Summary:
+  - Players targeted  : 1,198
+  - Profiles scraped  : 4
+  - Found on ESPN     : 0
+  - Not found         : 4
+  - Errors            : 0
+  - Supabase uploaded : 0
+────────────────────────────────────────────────────────────────────────
+  Local DB    : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\db\cricket.db
+  Log file    : C:\Users\sandeep\Downloads\Claudes\Cricket\cricket_data\logs_and_reports\scrape_player_profiles_20260418_153042.log
+========================================================================
